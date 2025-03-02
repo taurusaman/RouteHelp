@@ -15,6 +15,7 @@ class _BusRouteSystemDesignState extends State<BusRouteSystemDesign> {
   var destination = TextEditingController();
 
   int? minNoOfBuses;
+  bool showAllRoutes = false;
 
   @override
   Widget build(BuildContext context) {
@@ -22,63 +23,95 @@ class _BusRouteSystemDesignState extends State<BusRouteSystemDesign> {
         appBar: AppBar(
           title: Text("Bus Route System Design"),
         ),
-        body: Container(
-          child: Column(
-            children: [
-              Text("All Routes Being shown to you is: [1, 2, 7] and [3,6,7]"),
-              Container(
-                child: TextField(
+        body: SingleChildScrollView(
+          child: Container(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Bus Route System Design", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                SizedBox(height: 16),
+                TextField(
                   controller: source,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(hintText: "Enter Source Station"),
+                  decoration: InputDecoration(
+                    labelText: "Enter Source Station",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              Container(
-                child: TextField(
+                SizedBox(height: 16),
+                TextField(
                   controller: destination,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(hintText: "Enter Source Station"),
+                  decoration: InputDecoration(
+                    labelText: "Enter Destination Station",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              ElevatedButton(
+                SizedBox(height: 16),
+                ElevatedButton(
                   onPressed: () {
                     minNoOfBuses = findMinNoOfBuses(
                         routes: routes,
-                        source: int.parse(source.text),
-                        dest: int.parse(destination.text));
+                        source: source.text.toLowerCase(),
+                        dest: destination.text.toLowerCase());
                     debugPrint("Min No of Buses: $minNoOfBuses");
                     setState(() {});
                   },
-                  child: Text("Find Route with Min No. of Buses")),
-              Text(
-                  "Minimum Number of Buses you need to Change is $minNoOfBuses")
-            ],
+                  child: Text("Find Route with Min No. of Buses"),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  minNoOfBuses != null
+                      ? "Minimum Number of Buses jo aapne Change karna padega: $minNoOfBuses"
+                      : "Enter source and destination to find the minimum number of buses.",
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      showAllRoutes = !showAllRoutes;
+                    });
+                  },
+                  child: Text(showAllRoutes ? "Hide All Routes" : "Show All Routes"),
+                ),
+                if (showAllRoutes) ...[
+                  SizedBox(height: 16),
+                  Text("All Routes Being shown to you are:", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  for (var route in routes) 
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                    Text("Route No: ${routes.indexOf(route)+1}"),
+                    Flexible(child: Text(route.toString()))
+                    ] ),
+                ],
+              ],
+            ),
           ),
         ));
   }
 }
 
 int findMinNoOfBuses(
-    {required List<List<int>> routes, required int source, required int dest}) {
+    {required List<List<String>> routes,
+    required String source,
+    required String dest}) {
   debugPrint("source in fn is: $source");
-  debugPrint("dest ib=n fn is: $dest");
+  debugPrint("dest in fn is: $dest");
   if (source == dest) {
     return 0;
   }
 
-  //var adjListMap = Map();
-  //var adjMap = {};
-
-  Map<int, List<int>> adjListMap = Map<int, List<int>>();
-  //map of (stop and routes index List)
+  Map<String, List<int>> adjListMap = Map<String, List<int>>();
 
   for (int route = 0; route < routes.length; route++) {
-    for (int stop in routes[route]) {
-      //for(int i in list)
-      if (!adjListMap.containsKey(stop)) {
-        adjListMap[stop] = [];
+    for (String stop in routes[route]) {
+      String stopLower = stop.toLowerCase();
+      if (!adjListMap.containsKey(stopLower)) {
+        adjListMap[stopLower] = [];
       }
-      adjListMap[stop]!.add(route);
+      adjListMap[stopLower]!.add(route);
     }
   }
 
@@ -90,7 +123,6 @@ int findMinNoOfBuses(
 
   Set<int> visited = Set<int>();
 
-//inserting all the routes in the queue that has the source stop
   for (int route in adjListMap[source]!) {
     queue.add(route);
     visited.add(route);
@@ -104,13 +136,12 @@ int findMinNoOfBuses(
     for (int i = 0; i < size; i++) {
       int currentRoute = queue.removeFirst();
 
-      for (int stop in routes[currentRoute]) {
-        //case in which dest is present in same route then usi route me utarna hai
-        if (stop == dest) {
+      for (String stop in routes[currentRoute]) {
+        if (stop.toLowerCase() == dest) {
           return minBuses;
         }
 
-        for (int nextRoute in adjListMap[stop]!) {
+        for (int nextRoute in adjListMap[stop.toLowerCase()]!) {
           if (!visited.contains(nextRoute)) {
             queue.add(nextRoute);
             visited.add(nextRoute);
